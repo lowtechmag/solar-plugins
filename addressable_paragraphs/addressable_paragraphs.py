@@ -1,8 +1,24 @@
 """
 Addressable Paragraphs
 ------------------------
-In converting from MD to html images are wrapped in <p> objects.
+In converting from .md to .html, images are wrapped in <p> tags.
 This plugin gives those paragraphs the 'img' class for styling enhancements.
+In case there is any description immediately following that image, it is wrapped in another paragraph with the 'caption' class.
+
+Copyright (C) 2018  Roel Roscam Abbing
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 from __future__ import unicode_literals
@@ -18,11 +34,12 @@ def content_object_init(instance):
         for p in soup(['p', 'object']):
                 if p.findChild('img'):
                     p.attrs['class'] = 'img'
-                    caption = soup.new_tag('span',**{'class':'caption'})
-                    for i in reversed(p.contents):
-                        if i.name != 'img': #if it is not an <img> tag
-                            caption.insert(0,i.extract())
-                    p.append(caption)
+                    caption = soup.new_tag('p',**{'class':'caption'})
+                    if len(p.contents) > 1: #if we have more than just the <img> tag
+                        for i in reversed(p.contents):
+                            if i.name != 'img': #if it is not an <img> tag
+                                caption.insert(0,i.extract())
+                        p.insert_after(caption)
 
         instance._content = soup.decode()
 

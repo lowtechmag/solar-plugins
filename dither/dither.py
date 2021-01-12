@@ -53,7 +53,7 @@ def _image_path(pelican):
 
 def _out_path(pelican):
     return os.path.join(pelican.settings['OUTPUT_PATH'],
-                         pelican.settings.get('DITHER_DIR', DEFAULT_DITHER_DIR))
+                         pelican.settings.get('DITHER_DIR', DEFAULT_DITHER_DIR)).rstrip('/')
 
 def dither(pelican):
     global enabled
@@ -64,34 +64,35 @@ def dither(pelican):
     out_path = _out_path(pelican)
 
     transparency = pelican.settings.get("TRANSPARENCY",DEFAULT_TRANSPARENCY)
-
+    STABLE_SITEURL = pelican.settings.get("STABLE_SITEURL")
     if not os.path.exists(out_path):
         os.mkdir(out_path)
 
-    for dirpath, _, filenames in os.walk(in_path):
-        for filename in filenames:
-            file_, ext = os.path.splitext(filename)
-            fn= os.path.join(dirpath,filename)
-            of = os.path.join(out_path, filename.replace(ext,'.png'))
-            if not os.path.exists(of) and imghdr.what(fn):
-                logging.debug("dither plugin: dithering {}".format(fn))
+    if pelican.settings.get("SITEURL") ==  STABLE_SITEURL:
+        for dirpath, _, filenames in os.walk(in_path):
+            for filename in filenames:
+                file_, ext = os.path.splitext(filename)
+                fn= os.path.join(dirpath,filename)
+                of = os.path.join(out_path, filename.replace(ext,'.png'))
+                if not os.path.exists(of) and imghdr.what(fn):
+                    logging.debug("Dither plugin: dithering {}".format(fn))
 
-                img= Image.open(fn).convert('RGB')
+                    img= Image.open(fn).convert('RGB')
 
-                resize = pelican.settings.get('RESIZE', DEFAULT_RESIZE_OUTPUT)
+                    resize = pelican.settings.get('RESIZE', DEFAULT_RESIZE_OUTPUT)
 
-                if resize:
-                    image_size = pelican.settings.get('SIZE', DEFAULT_MAX_SIZE)
-                    img.thumbnail(image_size, Image.LANCZOS)
-            
-                palette = hitherdither.palette.Palette(pelican.settings.get('DITHER_PALETTE', DEFAULT_DITHER_PALETTE))
-            
-                threshold = pelican.settings.get('THRESHOLD', DEFAULT_THRESHOLD)
-            
-                img_dithered = hitherdither.ordered.bayer.bayer_dithering(img, palette, threshold, order=8) #see hither dither documentation for different dithering algos
+                    if resize:
+                        image_size = pelican.settings.get('SIZE', DEFAULT_MAX_SIZE)
+                        img.thumbnail(image_size, Image.LANCZOS)
+                
+                    palette = hitherdither.palette.Palette(pelican.settings.get('DITHER_PALETTE', DEFAULT_DITHER_PALETTE))
+                
+                    threshold = pelican.settings.get('THRESHOLD', DEFAULT_THRESHOLD)
+                
+                    img_dithered = hitherdither.ordered.bayer.bayer_dithering(img, palette, threshold, order=8) #see hither dither documentation for different dithering algos
 
-                img_dithered.save(of, optimize=True)
-    #logging.debug(calculate_savings(in_path,out_path))
+                    img_dithered.save(of, optimize=True)
+        #logging.debug(calculate_savings(in_path,out_path))
 
 def parse_for_images(instance):
     #based on better_figures_and_images plugin by @dflock, @phrawzty,@if1live,@jar1karp,@dhalperi,@aqw,@adworacz
